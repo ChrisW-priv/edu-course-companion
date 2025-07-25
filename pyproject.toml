@@ -5,3 +5,31 @@ description = "Project dedicated to creating educational course companion."
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = ["content-extraction==0.3.1"]
+
+[dependency-groups]
+dev = ["pre-commit>=4.2.0", "pyright>=1.1.403", "pytest>=8.4.1", "ruff>=0.12.4"]
+
+[tool.pyright]
+venvPath = "."
+venv = ".venv"
+
+[tool.ruff]
+builtins = ["_"]
+target-version = "py312"
+extend-exclude = [
+    '.git',
+    '__pycache__',
+    'build',
+    'dist',
+    '.venv',
+    'venv',
+    '.tox',
+    '.mypy_cache',
+    '.pytest_cache',
+    '*/migrations',
+    '*/dev-tools',
+]
+line-length = 120
+
+[tool.ruff.format]
+quote-style = "single"
