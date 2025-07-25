@@ -9,10 +9,11 @@ resource "google_project_service" "service" {
     "secretmanager.googleapis.com",
     "sqladmin.googleapis.com",
     "storage.googleapis.com",
+    "cloudbuild.googleapis.com",
     "iam.googleapis.com",
     "vpcaccess.googleapis.com",
-    "compute.googleapis.com",           # Added for VPC network
-    "servicenetworking.googleapis.com", # Added for Private Service Connection
+    "compute.googleapis.com",
+    "servicenetworking.googleapis.com",
   ])
 
   project            = var.google_project_id
@@ -124,4 +125,16 @@ module "file-processor" {
   google_project_id         = var.google_project_id
   google_region             = var.google_region
   cloudrun_application_name = var.google_project_id
+}
+
+module "cloudbuild" {
+  depends_on = [
+    google_project_service.service
+  ]
+  source                                    = "./modules/cloudbuild"
+  google_project_id                         = var.google_project_id
+  google_project_number                     = var.google_project_number
+  google_region                             = var.google_region
+  github_google_cloud_build_installation_id = var.github_google_cloud_build_installation_id
+  github_repository_uri                     = var.github_repository_uri
 }

@@ -48,3 +48,11 @@ variable "ai_api_key_env_var_name" {
   type        = string
   default     = "GEMINI_API_KEY"
 }
+
+variable "github_google_cloud_build_installation_id" {
+  type = string
+}
+
+variable "github_repository_uri" {
+  type = string
+}
