@@ -42,8 +42,8 @@ resource "google_secret_manager_secret" "django_superuser_password_secret" {
 }
 
 resource "random_password" "django_superuser_password" {
-  count   = var.django_superuser_password_secret_id == "" ? 1 : 0
-  length  = 32
+  count  = var.django_superuser_password_secret_id == "" ? 1 : 0
+  length = 32
 }
 
 resource "google_secret_manager_secret_version" "django_superuser_password_version" {
@@ -78,9 +78,9 @@ resource "google_secret_manager_secret" "django_secret_key_secret" {
 }
 
 resource "random_string" "django_secret_key" {
-  count  = var.django_secret_key_secret_id == "" ? 1 : 0
-  length = 50
-  special = true
+  count            = var.django_secret_key_secret_id == "" ? 1 : 0
+  length           = 50
+  special          = true
   override_special = "!@#$%^&*()-_=+" # Django requires specific characters
 }
 
@@ -143,9 +143,9 @@ locals {
 # FEATURE: Cloud Run Service
 # -------------------------------------------------------------------------------------
 resource "google_cloud_run_v2_service" "application_backend" {
-  name     = var.cloudrun_application_name
-  project  = var.google_project_id
-  location = var.google_region
+  name                = var.cloudrun_application_name
+  project             = var.google_project_id
+  location            = var.google_region
   deletion_protection = false
 
   lifecycle {
@@ -186,7 +186,7 @@ resource "google_cloud_run_v2_service" "application_backend" {
 
     containers {
       name  = "django"
-      image = var.docker_image_url != "" ? var.docker_image_url : "us-docker.pkg.dev/cloudrun/container/hello"
+      image = var.docker_image_url
 
       ports {
         name           = "h2c"
@@ -390,34 +390,34 @@ resource "google_storage_bucket_iam_member" "uploads_admin_sa" {
 # -------------------------------------------------------------------------------------
 
 resource "google_secret_manager_secret_iam_member" "django_superuser_password_secret_accessor" {
-  secret_id  = local.effective_django_superuser_password_secret_id
-  role    = "roles/secretmanager.secretAccessor"
-  member  = "serviceAccount:${local.cloudrun_service_account.email}"
+  secret_id = local.effective_django_superuser_password_secret_id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${local.cloudrun_service_account.email}"
 }
 
 resource "google_secret_manager_secret_iam_member" "django_secret_key_secret_accessor" {
-  secret_id  = local.effective_django_secret_key_secret_id
-  role    = "roles/secretmanager.secretAccessor"
-  member  = "serviceAccount:${local.cloudrun_service_account.email}"
+  secret_id = local.effective_django_secret_key_secret_id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${local.cloudrun_service_account.email}"
 }
 
 resource "google_secret_manager_secret_iam_member" "postgres_password_secret_accessor" {
-  count   = var.database_type == "postgres" && var.postgres_password_secret_id != null ? 1 : 0
-  secret_id  = var.postgres_password_secret_id
-  role    = "roles/secretmanager.secretAccessor"
-  member  = "serviceAccount:${local.cloudrun_service_account.email}"
+  count     = var.database_type == "postgres" && var.postgres_password_secret_id != null ? 1 : 0
+  secret_id = var.postgres_password_secret_id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${local.cloudrun_service_account.email}"
 }
 
 resource "google_secret_manager_secret_iam_member" "ai_api_key_secret_accessor" {
-  count   = var.ai_token_secret_id != "" ? 1 : 0
-  secret_id  = var.ai_token_secret_id
-  role    = "roles/secretmanager.secretAccessor"
-  member  = "serviceAccount:${local.cloudrun_service_account.email}"
+  count     = var.ai_token_secret_id != "" ? 1 : 0
+  secret_id = var.ai_token_secret_id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${local.cloudrun_service_account.email}"
 }
 
 resource "google_secret_manager_secret_iam_member" "extra_env_var_secret_accessor" {
-  for_each = { for ev in var.extra_env_vars : ev.name => ev if ev.secret_id != null }
-  secret_id   = each.value.secret_id
-  role     = "roles/secretmanager.secretAccessor"
-  member   = "serviceAccount:${local.cloudrun_service_account.email}"
+  for_each  = { for ev in var.extra_env_vars : ev.name => ev if ev.secret_id != null }
+  secret_id = each.value.secret_id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${local.cloudrun_service_account.email}"
 }

@@ -32,7 +32,7 @@ variable "database_type" {
 variable "docker_image_url" {
   description = "The URL of the Docker image to deploy to Cloud Run. If empty, a default 'hello-world' image is used."
   type        = string
-  default     = ""
+  default     = "us-docker.pkg.dev/cloudrun/container/hello"
 }
 
 variable "min_instance_count" {

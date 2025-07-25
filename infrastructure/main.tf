@@ -47,7 +47,6 @@ resource "google_secret_manager_secret_version" "ai_api_key_version" {
 locals {
   effective_ai_token_secret_id = var.ai_token_secret_id != "" ? var.ai_token_secret_id : google_secret_manager_secret.ai_api_key_secret[0].secret_id
   db_username                  = "postgres"
-  cloudrun_application_name    = "test-app" # Define the application name here
 }
 
 # -------------------------------------------------------------------------------------
@@ -94,15 +93,14 @@ module "vertex_ai" {
   google_region     = var.google_region
 }
 
-module "test-application" {
+module "cloudrun-application" {
   depends_on = [
     google_project_service.service
   ]
   source                    = "./modules/cloudrun-application"
   google_project_id         = var.google_project_id
   google_region             = var.google_region
-  cloudrun_application_name = local.cloudrun_application_name
-  docker_image_url          = ""
+  cloudrun_application_name = var.google_project_id
   # cloudsql_connection_name            = module.cloudsql_postgres.instance_connection_name
   postgres_username = local.db_username
   # postgres_password_secret_id         = module.cloudsql_postgres.db_password_secret_id # Use the secret ID output from cloudsql_postgres
@@ -116,4 +114,14 @@ module "test-application" {
       secret_id = local.effective_ai_token_secret_id
     }
   ]
+}
+
+module "file-processor" {
+  depends_on = [
+    google_project_service.service
+  ]
+  source                    = "./modules/file-processor"
+  google_project_id         = var.google_project_id
+  google_region             = var.google_region
+  cloudrun_application_name = var.google_project_id
 }
