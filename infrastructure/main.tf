@@ -101,7 +101,7 @@ module "cloudrun-application" {
   source                    = "./modules/cloudrun-application"
   google_project_id         = var.google_project_id
   google_region             = var.google_region
-  cloudrun_application_name = var.google_project_id
+  cloudrun_application_name = "main"
   # cloudsql_connection_name            = module.cloudsql_postgres.instance_connection_name
   postgres_username = local.db_username
   # postgres_password_secret_id         = module.cloudsql_postgres.db_password_secret_id # Use the secret ID output from cloudsql_postgres
@@ -124,7 +124,7 @@ module "file-processor" {
   source                    = "./modules/file-processor"
   google_project_id         = var.google_project_id
   google_region             = var.google_region
-  cloudrun_application_name = var.google_project_id
+  cloudrun_application_name = "main"
 }
 
 module "cloudbuild" {
