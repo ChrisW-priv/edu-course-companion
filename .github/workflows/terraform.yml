@@ -41,7 +41,7 @@ jobs:
       # Terraform will automatically read the backend configuration from your .tf files
       - name: Terraform Init
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        run: cd infractructure && terraform init
+        run: cd infrastructure && terraform init
 
       - name: Terraform Apply
         # The original condition had a syntax error with extra quotes. This is the correct way.
