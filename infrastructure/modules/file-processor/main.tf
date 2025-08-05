@@ -12,7 +12,7 @@ locals {
   is_creating_sa        = var.service_account_email == ""
   service_account_email = local.is_creating_sa ? google_service_account.this[0].email : var.service_account_email
 
-  pubsub_topic_name = var.pubsub_topic_name != "" ? var.pubsub_topic_name : "${var.cloudrun_application_name}-eventarc-topic"
+
 }
 
 # create or reference input bucket
@@ -63,11 +63,7 @@ resource "google_storage_bucket_iam_member" "output_sa_writer" {
   member = "serviceAccount:${local.service_account_email}"
 }
 
-# Pub/Sub topic for Eventarc
-resource "google_pubsub_topic" "eventarc" {
-  name    = local.pubsub_topic_name
-  project = var.google_project_id
-}
+
 
 # Cloud Run Job definition
 resource "google_cloud_run_v2_job" "extractor" {
@@ -128,11 +124,7 @@ resource "google_eventarc_trigger" "on_input_finalized" {
     value     = local.input_bucket_name
   }
 
-  transport {
-    pubsub {
-      topic = google_pubsub_topic.eventarc.id
-    }
-  }
+
 
   destination {
     cloud_run_service {
