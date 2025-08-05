@@ -10,7 +10,7 @@ data "google_iam_policy" "p4sa-secretAccessor" {
 
 # Create a new Secret Manager secret if none provided
 resource "google_secret_manager_secret" "github_token" {
-  count     = var.github_token_secret == "" ? 1 : 0
+  count     = var.github_token_secret_id == "" ? 1 : 0
   secret_id = "github-token"
   replication {
     user_managed {
@@ -23,25 +23,25 @@ resource "google_secret_manager_secret" "github_token" {
 
 # Create the initial version only when we created the secret
 resource "google_secret_manager_secret_version" "github_token" {
-  count       = var.github_token_secret == "" ? 1 : 0
+  count       = var.github_token_secret_id == "" ? 1 : 0
   secret      = google_secret_manager_secret.github_token[0].id
   secret_data = ""
 }
 
 # Reference an existing secret if one was passed in
 data "google_secret_manager_secret" "github_token" {
-  count     = var.github_token_secret != "" ? 1 : 0
-  secret_id = var.github_token_secret
+  count     = var.github_token_secret_id != "" ? 1 : 0
+  secret_id = var.github_token_secret_id
   project   = var.google_project_id
 }
 
 # Pick whichever secret we ended up with
 locals {
-  github_token_secret_id = var.github_token_secret == "" ? google_secret_manager_secret.github_token[0].id : data.google_secret_manager_secret.github_token[0].id
+  github_token_secret_id = var.github_token_secret_id == "" ? google_secret_manager_secret.github_token[0].id : data.google_secret_manager_secret.github_token[0].id
 }
 
 resource "google_secret_manager_secret_iam_policy" "policy" {
-  secret_id   = var.github_token_secret
+  secret_id   = var.github_token_secret_id
   policy_data = data.google_iam_policy.p4sa-secretAccessor.policy_data
 }
 
@@ -53,7 +53,7 @@ resource "google_cloudbuildv2_connection" "github" {
   github_config {
     app_installation_id = var.github_google_cloud_build_installation_id
     authorizer_credential {
-      oauth_token_secret_version = var.github_token_secret
+      oauth_token_secret_version = var.github_token_secret_id
     }
   }
   depends_on = [google_secret_manager_secret_iam_policy.policy]

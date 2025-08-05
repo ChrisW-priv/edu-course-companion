@@ -1,0 +1,95 @@
+steps:
+  - id: "pull last base build"
+    name: "gcr.io/cloud-builders/docker"
+    waitFor: ["-"]
+    entrypoint: "bash"
+    args:
+      - "-c"
+      - |
+        docker pull ${_ARTIFACT_REGISTRY_URL}/${_IMAGE}-base:latest || exit 0
+
+  - id: "build base image"
+    waitFor:
+      - "pull last base build"
+    name: "gcr.io/cloud-builders/docker"
+    args:
+      - "build"
+      - "--cache-from"
+      - "${_ARTIFACT_REGISTRY_URL}/${_IMAGE}-base:latest"
+      - "--target"
+      - "base"
+      - "-t"
+      - "${_ARTIFACT_REGISTRY_URL}/${_IMAGE}-base:latest"
+      - "-f"
+      - "./backend/Dockerfile"
+      - "."
+
+  - id: "build backend image"
+    waitFor:
+      - "build base image"
+    name: "gcr.io/cloud-builders/docker"
+    args:
+      - "build"
+      - "--cache-from"
+      - "${_ARTIFACT_REGISTRY_URL}/${_IMAGE}-base:latest"
+      - "--target"
+      - "default-service-target"
+      - "-t"
+      - "${_ARTIFACT_REGISTRY_URL}/${_IMAGE}:latest"
+      - "-f"
+      - "./backend/Dockerfile"
+      - "."
+
+  - id: "push base image"
+    waitFor:
+      - "build base image"
+    name: "gcr.io/cloud-builders/docker"
+    args:
+      - "push"
+      - "--all-tags"
+      - "${_ARTIFACT_REGISTRY_URL}/${_IMAGE}-base"
+
+  - id: "push backend image"
+    waitFor:
+      - "build backend image"
+    name: "gcr.io/cloud-builders/docker"
+    args:
+      - "push"
+      - "--all-tags"
+      - "${_ARTIFACT_REGISTRY_URL}/${_IMAGE}"
+
+  - id: "trigger setup backend job"
+    name: "gcr.io/cloud-builders/gsutil"
+    entrypoint: "gcloud"
+    args:
+      - "run"
+      - "jobs"
+      - "execute"
+      - "backend-setup"
+      - "--region"
+      - "europe-west3"
+      - "--wait"
+
+  - id: "deploy backend"
+    waitFor:
+      - "push backend image"
+    name: "gcr.io/cloud-builders/gsutil"
+    entrypoint: "gcloud"
+    args:
+      - "run"
+      - "deploy"
+      - "backend"
+      - "--region"
+      - "europe-west3"
+      - "--image"
+      - "${_ARTIFACT_REGISTRY_URL}/${_IMAGE}:latest"
+      - "--command=./entrypoint.sh"
+      - "--args=run_asgi"
+
+options:
+  dynamicSubstitutions: true
+  logging: CLOUD_LOGGING_ONLY
+
+images:
+  - "${_ARTIFACT_REGISTRY_URL}/${_IMAGE}-base:latest"
+  - "${_ARTIFACT_REGISTRY_URL}/${_IMAGE}:latest"

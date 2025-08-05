@@ -1,5 +1,6 @@
 terraform {
-  backend "local" {
-    path = "terraform.tfstate"
+  backend "gcs" {
+    bucket = "kw-edu-course-companion-ci-bucket"
+    prefix = "terraform/state"
   }
 }

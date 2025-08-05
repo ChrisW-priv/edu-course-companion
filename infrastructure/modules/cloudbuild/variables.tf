@@ -20,12 +20,12 @@ variable "artifact_registry_url" {
   default = ""
 }
 
-variable "cloud_build_service_account_id" {
+variable "cloud_build_service_account_email" {
   type    = string
   default = ""
 }
 
-variable "github_token_secret" {
+variable "github_token_secret_id" {
   type    = string
   default = ""
 }
