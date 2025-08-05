@@ -117,15 +117,15 @@ module "cloudrun-application" {
   ]
 }
 
-module "file-processor" {
-  depends_on = [
-    google_project_service.service
-  ]
-  source                    = "./modules/file-processor"
-  google_project_id         = var.google_project_id
-  google_region             = var.google_region
-  cloudrun_application_name = "main"
-}
+# module "file-processor" {
+#   depends_on = [
+#     google_project_service.service
+#   ]
+#   source                    = "./modules/file-processor"
+#   google_project_id         = var.google_project_id
+#   google_region             = var.google_region
+#   cloudrun_application_name = "main"
+# }
 
 module "cloudbuild" {
   depends_on = [
