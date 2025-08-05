@@ -25,9 +25,19 @@ data "google_secret_manager_secret" "github_token" {
   project   = var.google_project_id
 }
 
+# Get the latest version of the existing secret
+data "google_secret_manager_secret_version" "github_token_latest" {
+  count   = var.github_token_secret_id != "" ? 1 : 0
+  project = data.google_secret_manager_secret.github_token[0].project
+  secret  = data.google_secret_manager_secret.github_token[0].secret_id
+}
+
 # Pick whichever secret we ended up with
 locals {
   github_token_secret_id = var.github_token_secret_id == "" ? google_secret_manager_secret.github_token[0].id : var.github_token_secret_id
+
+  # Use the full secret version ID for the Cloud Build connection.
+  effective_oauth_token_secret_version = var.github_token_secret_id == "" ? google_secret_manager_secret_version.github_token[0].id : data.google_secret_manager_secret_version.github_token_latest[0].id
 }
 
 resource "google_secret_manager_secret_iam_member" "p4sa-secretAccessor" {
@@ -48,7 +58,7 @@ resource "google_cloudbuildv2_connection" "github" {
   github_config {
     app_installation_id = var.github_google_cloud_build_installation_id
     authorizer_credential {
-      oauth_token_secret_version = local.github_token_secret_id
+      oauth_token_secret_version = local.effective_oauth_token_secret_version
     }
   }
   depends_on = [google_secret_manager_secret_iam_member.p4sa-secretAccessor]

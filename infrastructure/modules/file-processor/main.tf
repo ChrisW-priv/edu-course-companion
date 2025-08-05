@@ -127,10 +127,6 @@ resource "google_eventarc_trigger" "on_input_finalized" {
     attribute = "bucket"
     value     = local.input_bucket_name
   }
-  matching_criteria {
-    attribute = "resourceName"
-    value     = "projects/_/buckets/${local.input_bucket_name}/objects/${var.input_prefix}"
-  }
 
   transport {
     pubsub {
