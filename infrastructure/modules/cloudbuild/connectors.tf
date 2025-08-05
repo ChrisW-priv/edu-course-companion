@@ -15,7 +15,7 @@ resource "google_secret_manager_secret" "github_token" {
 resource "google_secret_manager_secret_version" "github_token" {
   count       = var.github_token_secret_id == "" ? 1 : 0
   secret      = google_secret_manager_secret.github_token[0].id
-  secret_data = var.github_token_secret_value
+  secret_data = "TODO:CHANGEME"
 }
 
 # Reference an existing secret if one was passed in
@@ -25,19 +25,24 @@ data "google_secret_manager_secret" "github_token" {
   project   = var.google_project_id
 }
 
-# Get the latest version of the existing secret
+# Get the latest version of the secret, regardless of how it was created
 data "google_secret_manager_secret_version" "github_token_latest" {
-  count   = var.github_token_secret_id != "" ? 1 : 0
-  project = data.google_secret_manager_secret.github_token[0].project
-  secret  = data.google_secret_manager_secret.github_token[0].secret_id
+  project = var.google_project_id
+  secret  = var.github_token_secret_id == "" ? google_secret_manager_secret.github_token[0].secret_id : var.github_token_secret_id
+
+  depends_on = [
+    # If we created the secret, this data source should run after we create the initial version.
+    google_secret_manager_secret_version.github_token
+  ]
 }
 
 # Pick whichever secret we ended up with
 locals {
-  github_token_secret_id = var.github_token_secret_id == "" ? google_secret_manager_secret.github_token[0].id : var.github_token_secret_id
+  # Use the full resource ID for the secret for IAM.
+  github_token_secret_id = var.github_token_secret_id == "" ? google_secret_manager_secret.github_token[0].id : data.google_secret_manager_secret.github_token[0].id
 
   # Use the full secret version ID for the Cloud Build connection.
-  effective_oauth_token_secret_version = var.github_token_secret_id == "" ? google_secret_manager_secret_version.github_token[0].id : data.google_secret_manager_secret_version.github_token_latest[0].id
+  effective_oauth_token_secret_version = data.google_secret_manager_secret_version.github_token_latest.id
 }
 
 resource "google_secret_manager_secret_iam_member" "p4sa-secretAccessor" {

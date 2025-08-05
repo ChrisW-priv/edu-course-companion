@@ -30,12 +30,6 @@ variable "github_token_secret_id" {
   default = ""
 }
 
-variable "github_token_secret_value" {
-  type      = string
-  default   = "TODO:CHANGEME"
-  sensitive = true
-}
-
 variable "github_google_cloud_build_installation_id" {
   type = string
 }
