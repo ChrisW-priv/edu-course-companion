@@ -39,7 +39,7 @@ variable "ai_token_secret_id" {
 variable "ai_api_key" {
   description = "The direct value for the AI API token. Used if 'ai_token_secret_id' is empty."
   type        = string
-  default     = ""
+  default     = "TODO:CHANGEME"
   sensitive   = true
 }
 

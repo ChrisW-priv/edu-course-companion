@@ -33,13 +33,13 @@ variable "input_prefix" {
 
 variable "input_mount_path" {
   type        = string
-  default     = "app/data/in"
+  default     = "/app/data/in"
   description = "Container path where the input bucket is mounted"
 }
 
 variable "output_mount_path" {
   type        = string
-  default     = "app/data/out"
+  default     = "/app/data/out"
   description = "Container path where the output bucket is mounted"
 }
 
