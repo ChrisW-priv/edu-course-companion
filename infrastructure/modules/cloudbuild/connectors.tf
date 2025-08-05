@@ -1,13 +1,3 @@
-data "google_iam_policy" "p4sa-secretAccessor" {
-  binding {
-    role = "roles/secretmanager.secretAccessor"
-    members = [
-      "serviceAccount:service-${var.google_project_number}@gcp-sa-cloudbuild.iam.gserviceaccount.com",
-      "serviceAccount:${var.google_project_number}@cloudbuild.gserviceaccount.com"
-    ]
-  }
-}
-
 # Create a new Secret Manager secret if none provided
 resource "google_secret_manager_secret" "github_token" {
   count     = var.github_token_secret_id == "" ? 1 : 0
@@ -37,12 +27,17 @@ data "google_secret_manager_secret" "github_token" {
 
 # Pick whichever secret we ended up with
 locals {
-  github_token_secret_id = var.github_token_secret_id == "" ? google_secret_manager_secret.github_token[0].id : data.google_secret_manager_secret.github_token[0].id
+  github_token_secret_id = var.github_token_secret_id == "" ? google_secret_manager_secret.github_token[0].id : var.github_token_secret_id
 }
 
-resource "google_secret_manager_secret_iam_policy" "policy" {
-  secret_id   = var.github_token_secret_id
-  policy_data = data.google_iam_policy.p4sa-secretAccessor.policy_data
+resource "google_secret_manager_secret_iam_member" "p4sa-secretAccessor" {
+  for_each = toset([
+    "serviceAccount:service-${var.google_project_number}@gcp-sa-cloudbuild.iam.gserviceaccount.com",
+    "serviceAccount:${var.google_project_number}@cloudbuild.gserviceaccount.com"
+  ])
+  secret_id = local.github_token_secret_id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = each.value
 }
 
 resource "google_cloudbuildv2_connection" "github" {
@@ -53,10 +48,10 @@ resource "google_cloudbuildv2_connection" "github" {
   github_config {
     app_installation_id = var.github_google_cloud_build_installation_id
     authorizer_credential {
-      oauth_token_secret_version = var.github_token_secret_id
+      oauth_token_secret_version = local.github_token_secret_id
     }
   }
-  depends_on = [google_secret_manager_secret_iam_policy.policy]
+  depends_on = [google_secret_manager_secret_iam_member.p4sa-secretAccessor]
 }
 
 resource "google_cloudbuildv2_repository" "github_connection" {
