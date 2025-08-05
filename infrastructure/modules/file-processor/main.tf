@@ -45,7 +45,7 @@ data "google_storage_bucket" "existing_output" {
 # Conditionally create the SA
 resource "google_service_account" "this" {
   count        = local.is_creating_sa ? 1 : 0
-  account_id   = "${var.cloudrun_application_name}-sa"
+  account_id   = "${var.cloudrun_application_name}-file-processor-sa"
   display_name = "${var.cloudrun_application_name} service account"
 }
 

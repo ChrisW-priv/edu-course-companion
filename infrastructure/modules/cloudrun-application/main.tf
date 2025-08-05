@@ -5,7 +5,7 @@
 
 resource "google_service_account" "created_sa" {
   count        = var.service_account_email == "" ? 1 : 0
-  account_id   = "${var.cloudrun_application_name}-sa"
+  account_id   = "${var.cloudrun_application_name}-cloudrun-sa"
   display_name = "Cloud Run Service Account for ${var.cloudrun_application_name}"
   project      = var.google_project_id
 }
