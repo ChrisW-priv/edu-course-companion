@@ -110,9 +110,10 @@ resource "google_cloud_run_v2_job" "extractor" {
 
 # Eventarc trigger on new GCS objects
 resource "google_eventarc_trigger" "on_input_finalized" {
-  name     = "${var.cloudrun_application_name}-trigger"
-  project  = var.google_project_id
-  location = var.google_region
+  name       = "${var.cloudrun_application_name}-trigger"
+  project    = var.google_project_id
+  location   = var.google_region
+  depends_on = [google_cloud_run_v2_job.extractor]
 
   # filter finalization events in your input prefix
   matching_criteria {
@@ -123,8 +124,6 @@ resource "google_eventarc_trigger" "on_input_finalized" {
     attribute = "bucket"
     value     = local.input_bucket_name
   }
-
-
 
   destination {
     cloud_run_service {
