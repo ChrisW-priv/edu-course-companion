@@ -8,10 +8,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     UV_COMPILE_BYTECODE=1 \
     UV_PYTHON_PREFERENCE='only-system'
 
-COPY rag/ ./rag/
 COPY pyproject.toml .
 
-RUN uv sync --group dockerdb --no-dev
+RUN uv sync --no-dev
 
 FROM python:3.13-slim@sha256:f41a75c9cee9391c09e0139f7b49d4b1fbb119944ec740ecce4040626dc07bed AS default-service-target
 

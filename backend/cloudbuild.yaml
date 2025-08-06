@@ -24,6 +24,15 @@ steps:
       - "./backend/Dockerfile"
       - "."
 
+  - id: "push base image"
+    waitFor:
+      - "build base image"
+    name: "gcr.io/cloud-builders/docker"
+    args:
+      - "push"
+      - "--all-tags"
+      - "${_ARTIFACT_REGISTRY_URL}/${_IMAGE}-base"
+
   - id: "build backend image"
     waitFor:
       - "build base image"
@@ -39,15 +48,6 @@ steps:
       - "-f"
       - "./backend/Dockerfile"
       - "."
-
-  - id: "push base image"
-    waitFor:
-      - "build base image"
-    name: "gcr.io/cloud-builders/docker"
-    args:
-      - "push"
-      - "--all-tags"
-      - "${_ARTIFACT_REGISTRY_URL}/${_IMAGE}-base"
 
   - id: "push backend image"
     waitFor:
