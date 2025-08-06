@@ -39,7 +39,7 @@ data "google_storage_bucket" "existing_output" {
   name  = var.existing_output_bucket_name
 }
 
-# ────────────────────────────────────── service account ────────────────────────────────────
+# service account
 resource "google_service_account" "this" {
   count        = local.is_creating_sa ? 1 : 0
   account_id   = "${var.cloudrun_application_name}-file-processor-sa"
@@ -56,7 +56,7 @@ resource "google_storage_bucket_iam_member" "input_sa_viewer" {
 # allow SA to write to output bucket
 resource "google_storage_bucket_iam_member" "output_sa_writer" {
   bucket = local.output_bucket_name
-  role   = "roles/storage.objectCreator"
+  role   = "roles/storage.objectUser"
   member = "serviceAccount:${local.service_account_email}"
 }
 
@@ -72,13 +72,14 @@ resource "google_project_iam_member" "gcs_agent_pubsub_publisher" {
   member  = "serviceAccount:${data.google_storage_project_service_account.gcs_agent.email_address}"
 }
 
-
 # Cloud Run
 resource "google_cloud_run_v2_service" "extractor" {
   name                = "${var.cloudrun_application_name}-extractor-service"
   project             = var.google_project_id
   location            = var.google_region
   deletion_protection = false
+
+  depends_on = [google_storage_bucket_iam_member.input_sa_viewer, google_storage_bucket_iam_member.output_sa_writer]
 
   template {
     service_account = local.service_account_email
