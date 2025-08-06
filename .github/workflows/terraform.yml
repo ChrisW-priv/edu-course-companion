@@ -37,12 +37,6 @@ jobs:
         uses: hashicorp/setup-terraform@v3
         # No 'with' block is needed for local execution
 
-      # Initialize a new or existing Terraform working directory
-      # Terraform will automatically read the backend configuration from your .tf files
-      - name: Terraform Init
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        run: cd infrastructure && terraform init
-
       - name: Terraform Apply
         # The original condition had a syntax error with extra quotes. This is the correct way.
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
