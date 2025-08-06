@@ -9,6 +9,6 @@ output "output_bucket_name" {
 }
 
 output "cloud_run_job_name" {
-  description = "Name of the Cloud Run Job"
-  value       = google_cloud_run_v2_job.extractor.name
+  description = "Name of the Cloud Run Service"
+  value       = google_cloud_run_v2_service.extractor.name
 }

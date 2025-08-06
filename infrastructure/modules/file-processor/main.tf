@@ -11,8 +11,6 @@ locals {
   # service‐account creation flag & email
   is_creating_sa        = var.service_account_email == ""
   service_account_email = local.is_creating_sa ? google_service_account.this[0].email : var.service_account_email
-
-
 }
 
 # create or reference input bucket
@@ -63,47 +61,46 @@ resource "google_storage_bucket_iam_member" "output_sa_writer" {
   member = "serviceAccount:${local.service_account_email}"
 }
 
-
-
-# Cloud Run Job definition
-resource "google_cloud_run_v2_job" "extractor" {
-  name     = "${var.cloudrun_application_name}-extractor-job"
-  project  = var.google_project_id
-  location = var.google_region
+# Cloud Run service definition
+resource "google_cloud_run_v2_service" "extractor" {
+  name                = "${var.cloudrun_application_name}-extractor-service"
+  project             = var.google_project_id
+  location            = var.google_region
+  deletion_protection = true
 
   template {
-    task_count = 1
+    service_account = local.service_account_email
 
-    template {
-      # mount both buckets via GCS volumes
-      volumes {
-        name = "input-bucket"
-        gcs {
-          bucket = local.input_bucket_name
-        }
+    scaling {
+      min_instance_count = 0
+      max_instance_count = 1
+    }
+    # mount both buckets via GCS volumes
+    volumes {
+      name = "input-bucket"
+      gcs {
+        bucket = local.input_bucket_name
       }
-      volumes {
-        name = "output-bucket"
-        gcs {
-          bucket = local.output_bucket_name
-        }
+    }
+
+    volumes {
+      name = "output-bucket"
+      gcs {
+        bucket = local.output_bucket_name
       }
+    }
 
-      containers {
-        image = var.docker_image_url
+    containers {
+      image = var.docker_image_url
 
-        volume_mounts {
-          name       = "input-bucket"
-          mount_path = var.input_mount_path
-        }
-        volume_mounts {
-          name       = "output-bucket"
-          mount_path = var.output_mount_path
-        }
+      volume_mounts {
+        name       = "input-bucket"
+        mount_path = var.input_mount_path
       }
-
-      # use our SA (created or provided)
-      service_account = local.service_account_email
+      volume_mounts {
+        name       = "output-bucket"
+        mount_path = var.output_mount_path
+      }
     }
   }
 }
@@ -113,7 +110,7 @@ resource "google_eventarc_trigger" "on_input_finalized" {
   name       = "${var.cloudrun_application_name}-trigger"
   project    = var.google_project_id
   location   = var.google_region
-  depends_on = [google_cloud_run_v2_job.extractor]
+  depends_on = [google_cloud_run_v2_service.extractor]
 
   # filter finalization events in your input prefix
   matching_criteria {
@@ -127,7 +124,7 @@ resource "google_eventarc_trigger" "on_input_finalized" {
 
   destination {
     cloud_run_service {
-      service = google_cloud_run_v2_job.extractor.name
+      service = google_cloud_run_v2_service.extractor.id
       region  = var.google_region
     }
   }

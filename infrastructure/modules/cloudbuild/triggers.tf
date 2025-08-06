@@ -19,6 +19,7 @@ data "google_service_account" "existing_sa" {
 
 locals {
   cloud_build_service_account_email = var.cloud_build_service_account_email == "" ? google_service_account.created_sa[0].email : data.google_service_account.existing_sa[0].email
+  cloud_build_service_account_id    = var.cloud_build_service_account_email == "" ? google_service_account.created_sa[0].id : data.google_service_account.existing_sa[0].id
 }
 
 # --------------------------------------------------------------------------
@@ -28,7 +29,7 @@ resource "google_cloudbuild_trigger" "github_backend_trigger" {
   name            = "build-backend-main"
   location        = var.google_region
   description     = "Trigger to build the backend code on main branch"
-  service_account = local.cloud_build_service_account_email
+  service_account = local.cloud_build_service_account_id
 
   repository_event_config {
     repository = google_cloudbuildv2_repository.github_connection.id
