@@ -176,7 +176,6 @@ resource "google_secret_manager_secret_iam_member" "extra_env_var_secret_accesso
   member    = "serviceAccount:${local.cloudrun_service_account.email}"
 }
 
-
 # -------------------------------------------------------------------------------------
 # FEATURE: IAM for GCS Buckets
 # Grant the service account permissions to the GCS buckets.

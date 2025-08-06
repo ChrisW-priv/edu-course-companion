@@ -10,6 +10,15 @@ resource "google_service_account" "created_sa" {
   display_name = "Minimaly privileged Service Account for Cloud Build"
 }
 
+# Grant roles to the created SA.
+# These bindings are only created when a new SA is created by this module.
+resource "google_project_iam_member" "cloud_build_sa_roles" {
+  for_each = var.cloud_build_service_account_email == "" ? local.cloud_build_sa_roles : toset([])
+  project  = var.google_project_id
+  role     = each.key
+  member   = "serviceAccount:${google_service_account.created_sa[0].email}"
+}
+
 # Reference existing SA when cloud_build_service_account_email is set
 data "google_service_account" "existing_sa" {
   count      = var.cloud_build_service_account_email != "" ? 1 : 0
@@ -20,6 +29,13 @@ data "google_service_account" "existing_sa" {
 locals {
   cloud_build_service_account_email = var.cloud_build_service_account_email == "" ? google_service_account.created_sa[0].email : data.google_service_account.existing_sa[0].email
   cloud_build_service_account_id    = var.cloud_build_service_account_email == "" ? google_service_account.created_sa[0].id : data.google_service_account.existing_sa[0].id
+
+  cloud_build_sa_roles = toset([
+    "roles/cloudbuild.builds.builder",
+    "roles/artifactregistry.writer",
+    "roles/logging.logWriter",
+    "roles/secretmanager.secretAccessor",
+  ])
 }
 
 # --------------------------------------------------------------------------
