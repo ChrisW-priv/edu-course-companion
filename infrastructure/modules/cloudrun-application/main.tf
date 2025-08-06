@@ -138,6 +138,67 @@ locals {
   uploads_bucket_name = local.is_creating_uploads_bucket ? google_storage_bucket.created_uploads[0].name : data.google_storage_bucket.existing_uploads[0].name
 }
 
+# -------------------------------------------------------------------------------------
+# FEATURE: IAM for Secret Manager Secrets
+# Grant the Cloud Run service account permissions to access required secrets.
+# -------------------------------------------------------------------------------------
+
+resource "google_secret_manager_secret_iam_member" "django_superuser_password_secret_accessor" {
+  secret_id = local.effective_django_superuser_password_secret_id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${local.cloudrun_service_account.email}"
+}
+
+resource "google_secret_manager_secret_iam_member" "django_secret_key_secret_accessor" {
+  secret_id = local.effective_django_secret_key_secret_id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${local.cloudrun_service_account.email}"
+}
+
+resource "google_secret_manager_secret_iam_member" "postgres_password_secret_accessor" {
+  count     = var.database_type == "postgres" && var.postgres_password_secret_id != null ? 1 : 0
+  secret_id = var.postgres_password_secret_id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${local.cloudrun_service_account.email}"
+}
+
+resource "google_secret_manager_secret_iam_member" "ai_api_key_secret_accessor" {
+  count     = var.ai_token_secret_id != "" ? 1 : 0
+  secret_id = var.ai_token_secret_id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${local.cloudrun_service_account.email}"
+}
+
+resource "google_secret_manager_secret_iam_member" "extra_env_var_secret_accessor" {
+  for_each  = { for ev in var.extra_env_vars : ev.name => ev if ev.secret_id != null }
+  secret_id = each.value.secret_id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${local.cloudrun_service_account.email}"
+}
+
+
+# -------------------------------------------------------------------------------------
+# FEATURE: IAM for GCS Buckets
+# Grant the service account permissions to the GCS buckets.
+# -------------------------------------------------------------------------------------
+
+resource "google_storage_bucket_iam_member" "statics_viewer_all_users" {
+  bucket = local.statics_bucket_name
+  role   = "roles/storage.objectViewer"
+  member = "allUsers"
+}
+
+resource "google_storage_bucket_iam_member" "statics_admin_sa" {
+  bucket = local.statics_bucket_name
+  role   = "roles/storage.objectAdmin"
+  member = "serviceAccount:${local.cloudrun_service_account.email}"
+}
+
+resource "google_storage_bucket_iam_member" "uploads_admin_sa" {
+  bucket = local.uploads_bucket_name
+  role   = "roles/storage.objectAdmin"
+  member = "serviceAccount:${local.cloudrun_service_account.email}"
+}
 
 # -------------------------------------------------------------------------------------
 # FEATURE: Cloud Run Service
@@ -359,65 +420,4 @@ resource "google_cloud_run_v2_service" "application_backend" {
       }
     }
   }
-}
-
-# -------------------------------------------------------------------------------------
-# FEATURE: IAM for GCS Buckets
-# Grant the service account permissions to the GCS buckets.
-# -------------------------------------------------------------------------------------
-
-resource "google_storage_bucket_iam_member" "statics_viewer_all_users" {
-  bucket = local.statics_bucket_name
-  role   = "roles/storage.objectViewer"
-  member = "allUsers"
-}
-
-resource "google_storage_bucket_iam_member" "statics_admin_sa" {
-  bucket = local.statics_bucket_name
-  role   = "roles/storage.objectAdmin"
-  member = "serviceAccount:${local.cloudrun_service_account.email}"
-}
-
-resource "google_storage_bucket_iam_member" "uploads_admin_sa" {
-  bucket = local.uploads_bucket_name
-  role   = "roles/storage.objectAdmin"
-  member = "serviceAccount:${local.cloudrun_service_account.email}"
-}
-
-# -------------------------------------------------------------------------------------
-# FEATURE: IAM for Secret Manager Secrets
-# Grant the Cloud Run service account permissions to access required secrets.
-# -------------------------------------------------------------------------------------
-
-resource "google_secret_manager_secret_iam_member" "django_superuser_password_secret_accessor" {
-  secret_id = local.effective_django_superuser_password_secret_id
-  role      = "roles/secretmanager.secretAccessor"
-  member    = "serviceAccount:${local.cloudrun_service_account.email}"
-}
-
-resource "google_secret_manager_secret_iam_member" "django_secret_key_secret_accessor" {
-  secret_id = local.effective_django_secret_key_secret_id
-  role      = "roles/secretmanager.secretAccessor"
-  member    = "serviceAccount:${local.cloudrun_service_account.email}"
-}
-
-resource "google_secret_manager_secret_iam_member" "postgres_password_secret_accessor" {
-  count     = var.database_type == "postgres" && var.postgres_password_secret_id != null ? 1 : 0
-  secret_id = var.postgres_password_secret_id
-  role      = "roles/secretmanager.secretAccessor"
-  member    = "serviceAccount:${local.cloudrun_service_account.email}"
-}
-
-resource "google_secret_manager_secret_iam_member" "ai_api_key_secret_accessor" {
-  count     = var.ai_token_secret_id != "" ? 1 : 0
-  secret_id = var.ai_token_secret_id
-  role      = "roles/secretmanager.secretAccessor"
-  member    = "serviceAccount:${local.cloudrun_service_account.email}"
-}
-
-resource "google_secret_manager_secret_iam_member" "extra_env_var_secret_accessor" {
-  for_each  = { for ev in var.extra_env_vars : ev.name => ev if ev.secret_id != null }
-  secret_id = each.value.secret_id
-  role      = "roles/secretmanager.secretAccessor"
-  member    = "serviceAccount:${local.cloudrun_service_account.email}"
 }
