@@ -35,6 +35,7 @@ locals {
     "roles/artifactregistry.writer",
     "roles/logging.logWriter",
     "roles/secretmanager.secretAccessor",
+    "roles/run.invoker",
   ])
 }
 
