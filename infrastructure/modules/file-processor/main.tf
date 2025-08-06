@@ -125,9 +125,10 @@ resource "google_cloud_run_service_iam_member" "eventarc_invoker" {
 # ─────────────────────────────── Eventarc permissions fix ─────────────────────────────────
 # Give the SA permission to receive events
 resource "google_project_iam_member" "sa_eventarc_receiver" {
-  project = var.google_project_id
-  role    = "roles/eventarc.eventReceiver"
-  member  = "serviceAccount:${local.service_account_email}"
+  project    = var.google_project_id
+  role       = "roles/eventarc.eventReceiver"
+  member     = "serviceAccount:${local.service_account_email}"
+  depends_on = [local.service_account_email]
 }
 
 # ───────────────────────────────────── Eventarc trigger ────────────────────────────────────
