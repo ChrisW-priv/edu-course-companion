@@ -3,6 +3,11 @@ variable "google_project_id" {
   description = "GCP project to deploy into"
 }
 
+variable "google_project_number" {
+  type        = string
+  description = "GCP project number to deploy into"
+}
+
 variable "google_region" {
   type        = string
   description = "GCP region"
