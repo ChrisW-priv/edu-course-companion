@@ -78,7 +78,7 @@ resource "google_cloud_run_v2_service" "extractor" {
   name                = "${var.cloudrun_application_name}-extractor-service"
   project             = var.google_project_id
   location            = var.google_region
-  deletion_protection = true
+  deletion_protection = false
 
   template {
     service_account = local.service_account_email
