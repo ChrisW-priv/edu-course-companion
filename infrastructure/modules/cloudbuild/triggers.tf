@@ -37,6 +37,8 @@ locals {
     "roles/secretmanager.secretAccessor",
     "roles/run.invoker",
     "roles/run.viewer",
+    "roles/run.viewer",
+    "roles/run.developer",
   ])
 }
 
