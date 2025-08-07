@@ -39,6 +39,8 @@ locals {
     "roles/run.viewer",
     "roles/run.viewer",
     "roles/run.developer",
+    "roles/cloudbuild.builds.editor",
+    "roles/serviceusage.serviceUsageConsumer",
   ])
 }
 
@@ -53,6 +55,7 @@ locals {
 resource "google_cloudbuild_trigger" "github_backend_trigger" {
   name            = "build-backend-main"
   location        = var.google_region
+  project         = var.google_project_id
   description     = "Trigger to build the backend code on main branch"
   service_account = local.cloud_build_service_account_id
 
