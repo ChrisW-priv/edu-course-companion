@@ -437,7 +437,7 @@ locals {
   non_null_secret_ids = concat(
     [
       local.effective_django_secret_key_secret_id,
-      local.effective_django_secret_key_secret_id
+      local.effective_django_superuser_password_secret_id
     ],
     var.postgres_password_secret_id != "" ? [var.postgres_password_secret_id] : [],
   )

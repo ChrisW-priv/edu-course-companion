@@ -121,7 +121,6 @@ variable "django_secret_key_secret_id" {
   description = "The Secret Manager secret ID for the Django SECRET_KEY. If provided, this takes precedence. If empty, a new secret will be generated."
   type        = string
   default     = ""
-  sensitive   = true # Mark as sensitive as it's a secret key
 }
 
 variable "extra_env_vars" {
