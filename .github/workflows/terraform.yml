@@ -46,4 +46,4 @@ jobs:
       - name: Terraform Apply
         # The original condition had a syntax error with extra quotes. This is the correct way.
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-        run: cd infrastructure && terraform apply -auto-approve -var-file=./environments/deployed.tfvars
+        run: cd infrastructure && TF_VAR_github_token_secret_value=${{ secrets.TF_VAR_GITHUB_TOKEN_SECRET_VALUE }} terraform apply -auto-approve -var-file=./environments/deployed.tfvars
