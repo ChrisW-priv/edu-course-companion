@@ -20,7 +20,7 @@ output "django_uploads_bucket_name" {
 
 output "django_superuser_password_secret_id" {
   description = "The Secret Manager secret ID for the Django superuser password, whether provided or newly generated."
-  value       = var.django_superuser_password_secret_id
+  value       = local.effective_django_superuser_password_secret_id
 }
 
 output "django_secret_key_secret_id" {
