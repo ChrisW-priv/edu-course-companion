@@ -94,29 +94,6 @@ module "vertex_ai" {
   google_region     = var.google_region
 }
 
-module "cloudrun-application" {
-  depends_on = [
-    google_project_service.service
-  ]
-  source                    = "./modules/cloudrun-application"
-  google_project_id         = var.google_project_id
-  google_region             = var.google_region
-  cloudrun_application_name = "main"
-  # cloudsql_connection_name            = module.cloudsql_postgres.instance_connection_name
-  postgres_username = local.db_username
-  # postgres_password_secret_id         = module.cloudsql_postgres.db_password_secret_id # Use the secret ID output from cloudsql_postgres
-  django_superuser_password_secret_id = var.django_superuser_secret_id  # Use the new secret for django superuser password
-  django_secret_key_secret_id         = var.django_secret_key_secret_id # Use the new secret for django secret key
-  database_type                       = "sqlite3"
-
-  extra_env_vars = [
-    {
-      name      = var.ai_api_key_env_var_name
-      secret_id = local.effective_ai_token_secret_id
-    }
-  ]
-}
-
 module "file-processor" {
   depends_on = [
     google_project_service.service
@@ -140,4 +117,31 @@ module "cloudbuild" {
   google_region                             = var.google_region
   github_google_cloud_build_installation_id = var.github_google_cloud_build_installation_id
   github_repository_uri                     = var.github_repository_uri
+  github_token_secret_value                 = var.github_token_secret_value
+}
+
+module "cloudrun-application" {
+  depends_on = [
+    google_project_service.service,
+    module.cloudbuild
+  ]
+  source                              = "./modules/cloudrun-application"
+  google_project_id                   = var.google_project_id
+  google_project_number               = var.google_project_number
+  google_region                       = var.google_region
+  cloudrun_application_name           = "main"
+  django_superuser_password_secret_id = var.django_superuser_secret_id
+  django_secret_key_secret_id         = var.django_secret_key_secret_id
+  database_type                       = "sqlite3"
+  docker_image_url                    = "${module.cloudbuild.artifact_registry_url}/${module.cloudbuild.image_name}:latest"
+  postgres_username                   = local.db_username
+  # cloudsql_connection_name            = module.cloudsql_postgres.instance_connection_name
+  # postgres_password_secret_id         = module.cloudsql_postgres.db_password_secret_id # Use the secret ID output from cloudsql_postgres
+
+  extra_env_vars = [
+    {
+      name      = var.ai_api_key_env_var_name
+      secret_id = local.effective_ai_token_secret_id
+    }
+  ]
 }

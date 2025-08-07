@@ -15,7 +15,7 @@ resource "google_secret_manager_secret" "github_token" {
 resource "google_secret_manager_secret_version" "github_token" {
   count       = var.github_token_secret_id == "" ? 1 : 0
   secret      = google_secret_manager_secret.github_token[0].id
-  secret_data = "TODO:CHANGEME"
+  secret_data = var.github_token_secret_value
 }
 
 # Reference an existing secret if one was passed in

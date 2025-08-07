@@ -42,6 +42,11 @@ locals {
 # --------------------------------------------------------------------------
 # Cloud Build Trigger
 # --------------------------------------------------------------------------
+
+locals {
+  image_name = "backend"
+}
+
 resource "google_cloudbuild_trigger" "github_backend_trigger" {
   name            = "build-backend-main"
   location        = var.google_region
@@ -69,7 +74,7 @@ resource "google_cloudbuild_trigger" "github_backend_trigger" {
   }
 
   substitutions = {
-    "_IMAGE"                 = "backend"
+    "_IMAGE"                 = local.image_name
     "_ARTIFACT_REGISTRY_URL" = local.artifact_registry_url
   }
 }

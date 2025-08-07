@@ -24,6 +24,7 @@ variable "django_superuser_secret_id" {
   type        = string
   default     = ""
 }
+
 variable "django_secret_key_secret_id" {
   description = "The Secret Manager secret ID for the Django superuser password. If provided, the module will reference this secret. If empty, a new secure password will be generated and stored in a new Secret Manager secret."
   type        = string
@@ -55,4 +56,10 @@ variable "github_google_cloud_build_installation_id" {
 
 variable "github_repository_uri" {
   type = string
+}
+
+variable "github_token_secret_value" {
+  type      = string
+  sensitive = true
+  default   = "TODO:CHANGEME"
 }

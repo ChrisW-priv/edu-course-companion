@@ -156,7 +156,7 @@ resource "google_secret_manager_secret_iam_member" "django_secret_key_secret_acc
 }
 
 resource "google_secret_manager_secret_iam_member" "postgres_password_secret_accessor" {
-  count     = var.database_type == "postgres" && var.postgres_password_secret_id != null ? 1 : 0
+  count     = var.database_type == "postgres" && var.postgres_password_secret_id != "" ? 1 : 0
   secret_id = var.postgres_password_secret_id
   role      = "roles/secretmanager.secretAccessor"
   member    = "serviceAccount:${local.cloudrun_service_account.email}"
@@ -202,6 +202,7 @@ resource "google_storage_bucket_iam_member" "uploads_admin_sa" {
 # -------------------------------------------------------------------------------------
 # FEATURE: Cloud Run Service
 # -------------------------------------------------------------------------------------
+
 resource "google_cloud_run_v2_service" "application_backend" {
   name                = var.cloudrun_application_name
   project             = var.google_project_id
@@ -415,6 +416,184 @@ resource "google_cloud_run_v2_service" "application_backend" {
         env {
           name  = "LOG_LEVEL"
           value = "info"
+        }
+      }
+    }
+  }
+}
+
+# -------------------------------------------------------------------------------------
+# FEATURE: Cloud Run SETUP Job
+# -------------------------------------------------------------------------------------
+
+data "google_iam_policy" "jobs-secretAccessor" {
+  binding {
+    role    = "roles/secretmanager.secretAccessor"
+    members = ["serviceAccount:${var.google_project_number}-compute@developer.gserviceaccount.com"]
+  }
+}
+
+locals {
+  non_null_secret_ids = concat(
+    [
+      local.effective_django_secret_key_secret_id,
+      local.effective_django_secret_key_secret_id
+    ],
+    var.postgres_password_secret_id != "" ? [var.postgres_password_secret_id] : [],
+  )
+}
+
+resource "google_secret_manager_secret_iam_policy" "policy" {
+  for_each    = toset(local.non_null_secret_ids)
+  secret_id   = each.key
+  policy_data = data.google_iam_policy.jobs-secretAccessor.policy_data
+}
+
+resource "google_cloud_run_v2_job" "backend_setup_job" {
+  name                = "backend-setup"
+  project             = var.google_project_id
+  location            = var.google_region
+  deletion_protection = false
+
+  template {
+    template {
+      service_account = local.cloudrun_service_account.email
+
+      max_retries = 0
+      volumes {
+        name = "private-bucket-volume"
+        gcs {
+          bucket = local.uploads_bucket_name
+        }
+      }
+
+      volumes {
+        name = "public-bucket-volume"
+        gcs {
+          bucket = local.statics_bucket_name
+        }
+      }
+
+      dynamic "volumes" {
+        for_each = var.database_type == "postgres" ? [1] : []
+        content {
+          name = "cloudsql"
+          cloud_sql_instance {
+            instances = [var.cloudsql_connection_name]
+          }
+        }
+      }
+
+      containers {
+        image = var.docker_image_url
+        resources {
+          limits = {
+            "memory" = "1Gi"
+          }
+        }
+        volume_mounts {
+          name       = "private-bucket-volume"
+          mount_path = "/app/data/private"
+        }
+        volume_mounts {
+          name       = "public-bucket-volume"
+          mount_path = "/app/data/public"
+        }
+        dynamic "volume_mounts" {
+          for_each = var.database_type == "postgres" ? [1] : []
+          content {
+            name       = "cloudsql"
+            mount_path = "/cloudsql"
+          }
+        }
+        command = ["/bin/bash"]
+        args    = ["-c", "./entrypoint.sh setup"]
+
+        env {
+          name = "DJANGO_SECRET_KEY"
+          value_source {
+            secret_key_ref {
+              secret  = local.effective_django_secret_key_secret_id
+              version = "latest"
+            }
+          }
+        }
+
+        dynamic "env" {
+          for_each = var.database_type == "postgres" ? [1] : []
+          content {
+            name = "POSTGRES_PASSWORD"
+            value_source {
+              secret_key_ref {
+                secret  = var.postgres_password_secret_id
+                version = "latest"
+              }
+            }
+          }
+        }
+
+        env {
+          name = "DJANGO_SUPERUSER_PASSWORD"
+          value_source {
+            secret_key_ref {
+              secret  = local.effective_django_superuser_password_secret_id
+              version = "latest"
+            }
+          }
+        }
+
+        env {
+          name  = "GOOGLE_CLOUD_PROJECT"
+          value = var.google_project_id
+        }
+
+        env {
+          name  = "UPLOAD_BUCKET_NAME"
+          value = local.uploads_bucket_name
+        }
+
+        env {
+          name  = "STATIC_BUCKET_NAME"
+          value = local.statics_bucket_name
+        }
+
+        env {
+          name  = "DEPLOYMENT_ENVIRONMENT"
+          value = "PRODUCTION"
+        }
+
+        env {
+          name  = "DEPLOYMENT_TARGET"
+          value = "GCP_DOCKER"
+        }
+
+        env {
+          name  = "DATABASE_TYPE_ENV"
+          value = var.database_type
+        }
+
+        dynamic "env" {
+          for_each = var.database_type == "postgres" ? [1] : []
+          content {
+            name  = "DB_CONN_NAME"
+            value = var.cloudsql_connection_name
+          }
+        }
+
+        dynamic "env" {
+          for_each = var.database_type == "sqlite3" ? [1] : []
+          content {
+            name  = "DATABASE_URL"
+            value = "sqlite:////app/data/private/database.sqlite3"
+          }
+        }
+
+        dynamic "env" {
+          for_each = var.database_type == "postgres" ? [1] : []
+          content {
+            name  = "POSTGRES_USER"
+            value = var.postgres_username
+          }
         }
       }
     }

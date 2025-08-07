@@ -3,6 +3,11 @@ variable "google_project_id" {
   type        = string
 }
 
+variable "google_project_number" {
+  description = "The GCP project number."
+  type        = string
+}
+
 variable "google_region" {
   description = "The GCP region for deploying resources."
   type        = string
@@ -97,13 +102,13 @@ variable "ai_api_key_env_var_name" {
 variable "postgres_username" {
   description = "The username for the PostgreSQL database. Required if database_type is 'postgres'."
   type        = string
-  default     = null
+  default     = "postgres"
 }
 
 variable "postgres_password_secret_id" {
   description = "The Secret Manager secret ID for the PostgreSQL password. Required if database_type is 'postgres'."
   type        = string
-  default     = null
+  default     = ""
 }
 
 variable "django_superuser_password_secret_id" {
