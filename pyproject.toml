@@ -4,7 +4,11 @@ version = "0.1.0"
 description = "Project dedicated to creating educational course companion."
 readme = "README.md"
 requires-python = ">=3.13"
-dependencies = ["content-extraction==0.3.1"]
+dependencies = [
+    "content-extraction==0.3.1",
+    "django>=5.2.5",
+    "hypercorn>=0.17.3",
+]
 
 [dependency-groups]
 dev = ["pre-commit>=4.2.0", "pyright>=1.1.403", "pytest>=8.4.1", "ruff>=0.12.4"]
