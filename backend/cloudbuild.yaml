@@ -67,7 +67,7 @@ steps:
       - "execute"
       - "backend-setup"
       - "--region"
-      - "europe-west3"
+      - "europe-west4"
       - "--wait"
 
   - id: "deploy backend"
@@ -80,7 +80,7 @@ steps:
       - "deploy"
       - "backend"
       - "--region"
-      - "europe-west3"
+      - "europe-west4"
       - "--image"
       - "${_ARTIFACT_REGISTRY_URL}/${_IMAGE}:latest"
       - "--command=./entrypoint.sh"
