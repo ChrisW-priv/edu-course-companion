@@ -36,6 +36,7 @@ locals {
     "roles/logging.logWriter",
     "roles/secretmanager.secretAccessor",
     "roles/run.invoker",
+    "roles/run.executionViewer",
   ])
 }
 
