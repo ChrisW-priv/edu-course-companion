@@ -44,6 +44,12 @@ locals {
   ])
 }
 
+resource "google_service_account_iam_member" "cloud_build_can_act_as_compute" {
+  service_account_id = "projects/${var.google_project_id}/serviceAccounts/${var.google_project_number}-compute@developer.gserviceaccount.com"
+  role               = "roles/iam.serviceAccountUser"
+  member             = "serviceAccount:${local.cloud_build_service_account_email}"
+}
+
 # --------------------------------------------------------------------------
 # Cloud Build Trigger
 # --------------------------------------------------------------------------
