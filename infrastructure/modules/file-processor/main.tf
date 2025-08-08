@@ -1,6 +1,6 @@
 locals {
   # service-account creation flag & email
-  is_creating_pubsub_sa = var.pubsub_service_account_email == ""
+  is_creating_pubsub_sa        = var.pubsub_service_account_email == ""
   pubsub_service_account_email = local.is_creating_pubsub_sa ? google_service_account.pubsub_sa[0].email : var.pubsub_service_account_email
 }
 
@@ -81,7 +81,7 @@ resource "google_cloud_run_service_iam_member" "eventarc_invoker" {
   service  = google_cloud_run_v2_service.extractor.name
   location = var.google_region
   role     = "roles/run.invoker"
-  member   = "serviceAccount:service-${var.google_project_number}@gcp-sa-eventarc.iam.gserviceaccount.com"
+  member   = "serviceAccount:${local.pubsub_service_account_email}"
 }
 
 # ─────────────────────────────── Eventarc permissions fix ─────────────────────────────────
