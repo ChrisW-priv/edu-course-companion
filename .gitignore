@@ -11,3 +11,5 @@ wheels/
 infrastructure/.terraform/*
 
 *.sqlite3
+data/public
+db/

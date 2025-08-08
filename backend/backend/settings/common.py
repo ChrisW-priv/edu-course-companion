@@ -10,11 +10,16 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
-SECRET_KEY_DEFAULT = 'django-insecure-7as)vkd4)biycc=77(*#rfn38=@un1rme6s-&-111(ypgh*3lf'
-SECRET_KEY = SECRET_KEY_DEFAULT
+import os
+import warnings
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEFAULT_SECRET_KEY = """1CqpK58qm5(TY5'Tw-5xR$2"""
+SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', DEFAULT_SECRET_KEY)
+if SECRET_KEY == DEFAULT_SECRET_KEY:
+    warnings.warn('SECRET_KEY_ENV variable not set! (USING INSECURE DEFAULT!!!)')
+
+DEPLOYMENT_ENVIRONMENT = os.getenv('DEPLOYMENT_ENVIRONMENT', 'DEBUG')
+DEBUG = DEPLOYMENT_ENVIRONMENT == 'DEBUG'
 
 ALLOWED_HOSTS = ['*']
 
@@ -58,6 +63,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'backend.wsgi.application'
+ASGI_APPLICATION = 'backend.asgi.application'
 
 
 # Password validation
@@ -90,11 +96,6 @@ USE_I18N = True
 
 USE_TZ = True
 
-
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/5.2/howto/static-files/
-
-STATIC_URL = 'static/'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
