@@ -30,7 +30,7 @@ jobs:
         uses: "google-github-actions/auth@v2"
         with:
           project_id: "edu-course-companion"
-          workload_identity_provider: "projects/215112113279/locations/global/workloadIdentityPools/github-ci/providers/my-repo"
+          workload_identity_provider: "projects/91216206530/locations/global/workloadIdentityPools/github/providers/my-repo"
 
       # Install the latest version of Terraform CLI
       - name: Setup Terraform
