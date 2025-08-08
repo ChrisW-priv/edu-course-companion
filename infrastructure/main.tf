@@ -108,6 +108,7 @@ module "file-processor" {
   existing_output_bucket_name = module.cloudrun-application.django_uploads_bucket_name
   existing_input_bucket_name  = module.cloudrun-application.django_uploads_bucket_name
   service_account_email       = module.cloudrun-application.cloudrun_service_account_email
+  docker_image_url            = "${module.cloudbuild.artifact_registry_url}/${module.cloudbuild.image_name}:latest"
 }
 
 module "cloudbuild" {
