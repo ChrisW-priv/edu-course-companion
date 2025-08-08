@@ -14,6 +14,8 @@ resource "google_project_service" "service" {
     "vpcaccess.googleapis.com",
     "compute.googleapis.com",
     "servicenetworking.googleapis.com",
+    "eventarc.googleapis.com",
+    "pubsub.googleapis.com",
   ])
 
   project            = var.google_project_id
@@ -98,13 +100,14 @@ module "file-processor" {
   depends_on = [
     google_project_service.service
   ]
-  source                    = "./modules/file-processor"
-  google_project_id         = var.google_project_id
-  google_project_number     = var.google_project_number
-  google_region             = var.google_region
-  cloudrun_application_name = "main"
-  output_directory          = module.cloudrun-application.django_statics_bucket_name
-  input_directory           = module.cloudrun-application.django_uploads_bucket_name
+  source                      = "./modules/file-processor"
+  google_project_id           = var.google_project_id
+  google_project_number       = var.google_project_number
+  google_region               = var.google_region
+  cloudrun_application_name   = "main"
+  existing_output_bucket_name = module.cloudrun-application.django_statics_bucket_name
+  existing_input_bucket_name  = module.cloudrun-application.django_uploads_bucket_name
+  service_account_email       = module.cloudrun-application.cloudrun_service_account_email
 }
 
 module "cloudbuild" {

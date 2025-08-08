@@ -1,75 +1,39 @@
 locals {
-  # bucket creation flags
-  is_creating_input_bucket  = var.existing_input_bucket_name == ""
-  is_creating_output_bucket = var.existing_output_bucket_name == ""
-
-  # final bucket names
-  input_bucket_name  = local.is_creating_input_bucket ? "${var.cloudrun_application_name}-input" : var.existing_input_bucket_name
-  output_bucket_name = local.is_creating_output_bucket ? "${var.cloudrun_application_name}-output" : var.existing_output_bucket_name
-
   # service-account creation flag & email
-  is_creating_sa        = var.service_account_email == ""
-  service_account_email = local.is_creating_sa ? google_service_account.this[0].email : var.service_account_email
-}
-
-# ───────────────────────────────────────── buckets ─────────────────────────────────────────
-resource "google_storage_bucket" "created_input" {
-  count                       = local.is_creating_input_bucket ? 1 : 0
-  name                        = local.input_bucket_name
-  location                    = var.google_region
-  storage_class               = "STANDARD"
-  uniform_bucket_level_access = true
-}
-
-resource "google_storage_bucket" "created_output" {
-  count                       = local.is_creating_output_bucket ? 1 : 0
-  name                        = local.output_bucket_name
-  location                    = var.google_region
-  storage_class               = "STANDARD"
-  uniform_bucket_level_access = true
-}
-
-data "google_storage_bucket" "existing_input" {
-  count = local.is_creating_input_bucket ? 0 : 1
-  name  = var.existing_input_bucket_name
-}
-
-data "google_storage_bucket" "existing_output" {
-  count = local.is_creating_output_bucket ? 0 : 1
-  name  = var.existing_output_bucket_name
+  is_creating_pubsub_sa = var.pubsub_service_account_email == ""
+  pubsub_service_account_email = local.is_creating_pubsub_sa ? google_service_account.pubsub_sa[0].email : var.pubsub_service_account_email
 }
 
 # service account
-resource "google_service_account" "this" {
-  count        = local.is_creating_sa ? 1 : 0
-  account_id   = "${var.cloudrun_application_name}-file-processor-sa"
-  display_name = "${var.cloudrun_application_name} service account"
+resource "google_service_account" "pubsub_sa" {
+  count        = local.is_creating_pubsub_sa ? 1 : 0
+  account_id   = "eventarc-workflows-sa"
+  display_name = "Eventarc Workflows Service Account"
 }
 
 # allow SA to read from input bucket
 resource "google_storage_bucket_iam_member" "input_sa_viewer" {
-  bucket = local.input_bucket_name
+  bucket = var.existing_input_bucket_name
   role   = "roles/storage.objectViewer"
-  member = "serviceAccount:${local.service_account_email}"
+  member = "serviceAccount:${local.pubsub_service_account_email}"
 }
 
-# allow SA to write to output bucket
-resource "google_storage_bucket_iam_member" "output_sa_writer" {
-  bucket = local.output_bucket_name
-  role   = "roles/storage.objectUser"
-  member = "serviceAccount:${local.service_account_email}"
-}
-
-# Get the e-mail of the Cloud Storage service agent for this project
-data "google_storage_project_service_account" "gcs_agent" {
+resource "google_project_iam_member" "workflowsinvoker" {
+  for_each = toset([
+    "roles/workflows.invoker",
+    "roles/eventarc.eventReceiver",
+    "roles/logging.logWriter",
+  ])
   project = var.google_project_id
+  role    = each.value
+  member  = "serviceAccount:${local.pubsub_service_account_email}"
 }
 
-# Allow the agent to publish to Pub/Sub (required for Eventarc Storage triggers)
-resource "google_project_iam_member" "gcs_agent_pubsub_publisher" {
+data "google_storage_project_service_account" "gcs_account" {}
+resource "google_project_iam_member" "pubsubpublisher" {
   project = var.google_project_id
   role    = "roles/pubsub.publisher"
-  member  = "serviceAccount:${data.google_storage_project_service_account.gcs_agent.email_address}"
+  member  = "serviceAccount:${data.google_storage_project_service_account.gcs_account.email_address}"
 }
 
 # Cloud Run
@@ -79,10 +43,8 @@ resource "google_cloud_run_v2_service" "extractor" {
   location            = var.google_region
   deletion_protection = false
 
-  depends_on = [google_storage_bucket_iam_member.input_sa_viewer, google_storage_bucket_iam_member.output_sa_writer]
-
   template {
-    service_account = local.service_account_email
+    service_account = var.service_account_email
 
     scaling {
       min_instance_count = 0
@@ -92,11 +54,11 @@ resource "google_cloud_run_v2_service" "extractor" {
     # mount both buckets via GCS volumes
     volumes {
       name = "input-bucket"
-      gcs { bucket = local.input_bucket_name }
+      gcs { bucket = var.existing_input_bucket_name }
     }
     volumes {
       name = "output-bucket"
-      gcs { bucket = local.output_bucket_name }
+      gcs { bucket = var.existing_output_bucket_name }
     }
 
     containers {
@@ -127,18 +89,19 @@ resource "google_cloud_run_service_iam_member" "eventarc_invoker" {
 resource "google_project_iam_member" "sa_eventarc_receiver" {
   project    = var.google_project_id
   role       = "roles/eventarc.eventReceiver"
-  member     = "serviceAccount:${local.service_account_email}"
-  depends_on = [local.service_account_email]
+  member     = "serviceAccount:${var.service_account_email}"
+  depends_on = [var.service_account_email]
 }
 
 # ───────────────────────────────────── Eventarc trigger ────────────────────────────────────
 resource "google_eventarc_trigger" "on_input_finalized" {
-  name     = "${var.cloudrun_application_name}-trigger"
+  name     = "trigger-storage-cloudrun-tf"
   project  = var.google_project_id
   location = var.google_region
   depends_on = [
     google_cloud_run_v2_service.extractor,
-    google_project_iam_member.sa_eventarc_receiver
+    google_project_iam_member.sa_eventarc_receiver,
+    google_project_iam_member.pubsubpublisher,
   ]
 
   # Cloud Storage finalized objects in the input bucket
@@ -148,7 +111,7 @@ resource "google_eventarc_trigger" "on_input_finalized" {
   }
   matching_criteria {
     attribute = "bucket"
-    value     = local.input_bucket_name
+    value     = var.existing_input_bucket_name
   }
 
   destination {
@@ -158,5 +121,5 @@ resource "google_eventarc_trigger" "on_input_finalized" {
     }
   }
 
-  service_account = local.service_account_email
+  service_account = local.pubsub_service_account_email
 }

@@ -429,7 +429,7 @@ resource "google_cloud_run_v2_service" "application_backend" {
 data "google_iam_policy" "jobs-secretAccessor" {
   binding {
     role    = "roles/secretmanager.secretAccessor"
-    members = ["serviceAccount:${var.google_project_number}-compute@developer.gserviceaccount.com"]
+    members = ["serviceAccount:${local.cloudrun_service_account.email}"]
   }
 }
 

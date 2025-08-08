@@ -20,13 +20,11 @@ variable "cloudrun_application_name" {
 
 variable "existing_input_bucket_name" {
   type        = string
-  default     = ""
   description = "If non-empty, use this bucket instead of creating a new one for inputs"
 }
 
 variable "existing_output_bucket_name" {
   type        = string
-  default     = ""
   description = "If non-empty, use this bucket instead of creating a new one for outputs"
 }
 
@@ -67,7 +65,12 @@ variable "docker_image_url" {
 }
 
 variable "service_account_email" {
-  description = "The email of an existing service account to be used for Cloud Run. If provided, creation is skipped and this existing account is used. If empty, a new service account with a default name based on application_name will be created."
+  description = "The email of an existing service account to be used for Cloud Run."
+  type        = string
+}
+
+variable "pubsub_service_account_email" {
+  description = "The email of an existing service account to be used for pubsub topics. If provided, creation is skipped and this existing account is used. If empty, a new service account with a default name based on application_name will be created."
   type        = string
   default     = ""
 }
