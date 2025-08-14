@@ -113,10 +113,6 @@ resource "google_eventarc_trigger" "on_input_finalized" {
     attribute = "bucket"
     value     = var.existing_input_bucket_name
   }
-  matching_criteria {
-    attribute = "subject"
-    value     = "objects/main-uploads/"
-  }
 
   destination {
     cloud_run_service {
